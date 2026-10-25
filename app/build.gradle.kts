@@ -1,28 +1,35 @@
 plugins {
-    id("com.android.application")
-    id("com.google.devtools.ksp")
-    id("com.google.dagger.hilt.android")
-    id("androidx.navigation.safeargs")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("androidx.room")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.navigation.safeargs)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.room)
     id("kotlin-parcelize")
 }
 
 android {
-    namespace = "com.example.colorphone"
+    namespace = "com.winnix.base"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.colorphone"
+        applicationId = "com.winnix.base"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "BASE_URL", "\"https://api.example.com/\"")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "ENABLE_LOG", "true")
+            // Debug-only switch between the fake and the real remote data sources; see src/debug.
+            buildConfigField("boolean", "USE_FAKE_DATA", "true")
+        }
         release {
             isShrinkResources = true
             isMinifyEnabled = true
@@ -30,7 +37,22 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("boolean", "ENABLE_LOG", "false")
         }
+        // Release behaviour without R8, so it builds fast; logs stay on for testing.
+        create("staging") {
+            initWith(getByName("release"))
+            isShrinkResources = false
+            isMinifyEnabled = false
+            isDebuggable = false
+            matchingFallbacks += "release"
+            buildConfigField("boolean", "ENABLE_LOG", "true")
+        }
+    }
+    sourceSets {
+        // Staging and release share the real data source bindings; only debug sees the fake ones.
+        getByName("staging").kotlin.srcDir("src/prod/java")
+        getByName("release").kotlin.srcDir("src/prod/java")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -52,67 +74,60 @@ android {
 
 dependencies {
     // Android Core
-    implementation("androidx.core:core-ktx:1.19.1")
-    implementation("androidx.appcompat:appcompat:1.8.0")
-    implementation("com.google.android.material:material:1.14.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.2.2")
-    implementation("androidx.work:work-runtime-ktx:2.12.0")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    implementation("androidx.recyclerview:recyclerview:1.4.0")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.work.runtime.ktx)
 
-    //Dagger hilt
-    val hilt_version = "2.60.1"
-    implementation("com.google.dagger:hilt-android:$hilt_version")
-    ksp("com.google.dagger:hilt-android-compiler:$hilt_version")
+    // Dagger Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
-    //Retrofit + okhttp
-    val retrofit_version = "3.0.0"
-    implementation("com.squareup.retrofit2:retrofit:$retrofit_version")
-    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:$retrofit_version")
-    implementation("com.squareup.okhttp3:logging-interceptor:5.5.0")
+    // Retrofit + OkHttp + Serialization
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.kotlinx.serialization.json)
 
-    //Navigation component
-    val nav_version = "2.10.2"
-    implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
-    implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+    // Navigation component
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
 
-    //ViewModel + LiveData + Corountine
-    val lifecycle_version = "2.11.0"
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:${lifecycle_version}")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:${lifecycle_version}")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version")
-    ksp("androidx.lifecycle:lifecycle-compiler:$lifecycle_version")
-    implementation("androidx.lifecycle:lifecycle-process:$lifecycle_version")
-    val coroutinesVersion = "1.11.0"
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion")
+    // Lifecycle + Coroutines
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
 
-    //RoomDatabase
-    val room = "2.8.5"
-    implementation("androidx.room:room-runtime:$room")
-    implementation("androidx.room:room-ktx:$room")
-    ksp("androidx.room:room-compiler:$room")
-
-    // View
-    implementation("com.intuit.sdp:sdp-android:1.1.1")
-    implementation("com.intuit.ssp:ssp-android:1.1.1")
-    implementation("com.airbnb.android:lottie:6.7.1")
-
-    // Logging
-    implementation("com.jakewharton.timber:timber:5.0.1")
-
-    // Loading Image
-    implementation("io.coil-kt.coil3:coil:3.6.3")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.3")
-
-    // Startup
-    implementation("androidx.startup:startup-runtime:1.2.0")
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // Datastore
-    implementation("androidx.datastore:datastore-preferences:1.2.1")
+    implementation(libs.androidx.datastore.preferences)
 
-    // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+    // View
+    implementation(libs.sdp.android)
+    implementation(libs.ssp.android)
+    implementation(libs.lottie)
+
+    // Logging
+    implementation(libs.timber)
+
+    // Loading Image
+    implementation(libs.coil)
+    implementation(libs.coil.network.okhttp)
+
+    // Test
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }

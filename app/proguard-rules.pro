@@ -20,6 +20,14 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep class com.example.colorphone.data.local.entity.** { *; }
--keep class com.example.colorphone.data.remote.dto** { *; }
--keep class com.example.colorphone.domain.models.** { *; }
+# Release ships no logs: R8 drops every Timber call together with its arguments.
+-assumenosideeffects class timber.log.Timber, timber.log.Timber$Forest, timber.log.Timber$Tree {
+    public *** v(...);
+    public *** d(...);
+    public *** i(...);
+    public *** w(...);
+    public *** e(...);
+    public *** wtf(...);
+    public *** log(...);
+    public *** tag(...);
+}

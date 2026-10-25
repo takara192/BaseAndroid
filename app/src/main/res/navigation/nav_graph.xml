@@ -8,7 +8,7 @@
 
     <fragment
         android:id="@+id/mainFragment"
-        android:name="com.example.colorphone.ui.main.MainFragment"
+        android:name="com.winnix.base.ui.main.MainFragment"
         android:label="fragment_main"
         tools:layout="@layout/fragment_main" />
 
